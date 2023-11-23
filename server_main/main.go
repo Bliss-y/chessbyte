@@ -10,98 +10,50 @@ import (
     "bytes"
     "encoding/base64"
 )
-
-const FEN = "rnbqkbnr";
-
-type PlayerConnection struct {
-    connection net.Conn;
-    channel chan string;
-    id int;
-    rating int;
-}
-
-
-type Actor struct {
-    connection *PlayerConnection;
-    next *Actor;
-}
-
-// Game is just a room.
-type Game struct {
-    players [2]*PlayerConnection;
-    viewers *Actor;
-    playerCount int;
-    viewerCount int;
-    currentfen [68]byte;
-    lastmove int;
-    turn int;
-    gameType int;
-    status int; //-2 idle, -1 -> finding, 0 white wins, 1 black wins
-}
-
-func (g *Game) initializeGame(conn net.Conn){
-    g.players[0] = &PlayerConnection{conn, make(chan string),0 , 0}
-    g.playerCount = 1; 
-    for i, c:= range FEN {
-        g.currentfen[i] = byte(c) - 47; 
-        g.currentfen[56+i] = byte(c)
+var games = [30]*Game{};
+func sendWebscoketMessage(conn net.Conn, message string) bool {
+    var responsebytes bytes.Buffer;
+    responsebytes.WriteByte(uint8(129));
+    responsebytes.WriteByte(uint8(len(message)));
+    responsebytes.WriteString(message);
+    _,err:=conn.Write(responsebytes.Bytes());
+    if err != nil {
+        return false;
+    }else {
+        return true;
     }
-    g.turn = 0;
-}
-
-func (g *Game) reset() {
-    g.players[0] = nil
-    g.players[1] = nil
-    g.playerCount = 0;
-    g.status = -2;
-}
-
-func gameLoop(game *Game) {
-    for game.status == -1 {
-    }
-    if (game.status == 2) {
-        fmt.Println("Partner found!! ")
-        for _,e := range game.players {
-            go readWebsocket(e.connection,e.channel);
-        }
-    }
-    for game.status == 2 {
-        for _,p := range game.players {
-            select {
-                case message := <- p.channel:
-                    fmt.Println(message);
-                default:
-                    continue;
-            } 
-        }
-    }
-}
-
-
-var games = [1]*Game{};
-
-func sendWebscoketMessage() {
-     
 }
 
 func readWebsocket(conn net.Conn, message chan string) {
     buffer := make([]byte, 50); 
     for {
-        n, err := conn.Read(buffer);
+        _, err := conn.Read(buffer);
         if err == io.EOF {
+            message <- "Connection Closed!";
+            fmt.Println("Connection Closed!");
             close(message)
+            conn.Close();
             break;
         } else if err != nil {
+          fmt.Println("Err Occurred.. ?", err);
           close(message);
           break;
         }
-
         // do the message parsing
         fin := 0;
-        opcode :=0;
         fin = int((buffer[0] >> 7) & 1)
+        if fin != 1 {
+            fmt.Println("fin is not 1")
+        }
+        opcode :=0;
         opcode = int(buffer[0] & 0x0F);
+        if opcode != 0x1 {
+            fmt.Println("opcode is not 1")
+        }
         mask := (buffer[1] >> 7) & 1;
+        if mask != 1 {
+            fmt.Println("masbit is not 1")
+        }
         payload_length := buffer[1] & 0x7F; // last 7 bits
         current := 2;
         if (payload_length == 126) {
@@ -110,19 +62,26 @@ func readWebsocket(conn net.Conn, message chan string) {
             current = 4;
         } else if (payload_length == 127) {
             // read next 64 bytes for payload length
-            payload_length = recb[2];
+            payload_length = buffer[2];
             current = 10;
         }
         masking_key := []byte{buffer[current + 0], buffer[current + 1], buffer[current + 2], buffer[current + 3]};
         current += 4;
-        for i := 0; i < payload_length; i++ {
-            reciever[i] = rune(buffer[i + current] ^ masking_key[i % 4]);
-            printf("\n");
-            printf("%c", reciever[i]);
-            printf("\n");
+        msg := make([]byte, payload_length);
+        for i := 0; i < int(payload_length); i++ {
+            msg[i] = buffer[i + current] ^ masking_key[i % 4];
         }
-
+        message <- string(msg)
     }
+}
+
+func closeSocket(conn net.Conn) bool{
+    var responsebytes bytes.Buffer;
+    responsebytes.WriteByte(uint8(0x87));
+    responsebytes.WriteByte(uint8(0));
+    _,err:=conn.Write(responsebytes.Bytes());
+    conn.Close();
+    return err != nil;
 }
 
 func main(){
@@ -160,7 +119,6 @@ func handleRequest(conn net.Conn){
             }
             websocketkey, exists := req.Header["Sec-Websocket-Key"];
             websocketkey[0] += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-
             hash := sha1.New()
 	        // Write the string data to the hash object
             hash.Write([]byte(websocketkey[0]));

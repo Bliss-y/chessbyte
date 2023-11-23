@@ -10,18 +10,24 @@
     socket.onclose = e=>{
         console.log(e);
     }
-    function sendmessage(){
-        socket.send("message!");
+    function sendmessage(message){
+        socket.send(message);
+    }
+    function msg() {
+        sendmessage(document.getElementById("a").value)
     }
 
+    function closeS() {
+        console.log("Attempting to close the socket")
+        socket.close()
+    }
 </script>
 
 
 <form method="post" action="http://localhost:3000">
-    <input type="email" name="email">
-    <input type="password" name="password" id="">
-    <input type="submit" value="">
+    <input type="p" id="a" name="password" id="">
 </form>
 
-<button onclick="sendmessage()">Send message to ws server</button>
+<button onclick="msg()">Send message to ws server</button>
+<button onclick="closeS()">Close</button>
 
