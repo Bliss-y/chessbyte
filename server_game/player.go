@@ -7,7 +7,7 @@ import (
 
 type PlayerConnection struct {
     ws *WebSocketConnection;
-    id int;
+    id string;
     side int;
     rating uint;
     timeout int; // timeout to hold the last time before last move.

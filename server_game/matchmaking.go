@@ -100,6 +100,7 @@ func (m *MatchMakingPool) runMatchMaking(){
                                 delete(m.playing, temp.player.ws.authToken);
                                 m.players.remove(temp.player.ws.authToken);
                             }
+                            //TODO: Somwhow have gametype here
                             if pl_message == "find" {
                                 m.players.remove(temp.player.ws.authToken)
                                 if m.finders == nil {
