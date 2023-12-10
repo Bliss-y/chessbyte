@@ -1,5 +1,4 @@
 package main
-
 import (
     "fmt"
     "net"
@@ -10,33 +9,77 @@ import (
     "bytes"
     "encoding/base64"
 )
-var games = [30]*Game{};
-func sendWebscoketMessage(conn net.Conn, message string) bool {
+
+type WebSocketConnection struct {
+    connection net.Conn;
+    closed bool;
+    channel chan string;
+    isReading bool;
+    authToken string;
+}
+
+type withConnection interface{
+    getConnection() net.Conn;
+    isClosed() bool;
+    getChannel() chan string;
+    Closed();
+}
+
+func (w WebSocketConnection) getConnection() net.Conn{
+    return w.connection;
+}
+
+func (w *WebSocketConnection) isClosed() bool {
+    return w.closed;
+}
+
+
+func (WebSocketConnection) sendWebscoketMessage(connectionholder withConnection, message string) bool {
+    if connectionholder.isClosed() {
+        return false;
+    }
     var responsebytes bytes.Buffer;
     responsebytes.WriteByte(uint8(129));
     responsebytes.WriteByte(uint8(len(message)));
     responsebytes.WriteString(message);
-    _,err:=conn.Write(responsebytes.Bytes());
+    _,err:=connectionholder.getConnection().Write(responsebytes.Bytes());
     if err != nil {
         return false;
-    }else {
+    } else {
         return true;
     }
 }
 
-func readWebsocket(conn net.Conn, message chan string) {
+func (ws *WebSocketConnection) getChannel() chan string{
+    return ws.channel;
+}
+
+func (ws *WebSocketConnection) setReading(x bool) {
+    ws.isReading = x;
+}
+
+func (conn WebSocketConnection) Close() {
+    close(conn.channel);
+    conn.connection.Close();
+    conn.closed = true;
+}
+
+func (connectionHolder *WebSocketConnection) read() {
+    defer connectionHolder.setReading(false);
+    conn := connectionHolder.getConnection();
+    connectionHolder.isReading = true;
+    message := connectionHolder.getChannel();
     buffer := make([]byte, 50); 
     for {
         _, err := conn.Read(buffer);
         if err == io.EOF {
             message <- "Connection Closed!";
             fmt.Println("Connection Closed!");
-            close(message)
-            conn.Close();
+            connectionHolder.Close();
             break;
         } else if err != nil {
           fmt.Println("Err Occurred.. ?", err);
-          close(message);
+          connectionHolder.Close();
           break;
         }
         // do the message parsing
@@ -84,22 +127,6 @@ func closeSocket(conn net.Conn) bool{
     return err != nil;
 }
 
-func main(){
-    ln, err := net.Listen("tcp", ":3000") 
-    if (err != nil){
-        fmt.Println("could not start the server. check the port")
-        fmt.Println(err)
-        return;
-    }
-    for {
-        conn, err := ln.Accept()
-        if err != nil {
-            continue
-        }
-        go handleRequest(conn);
-    }
-}
-
 func handleRequest(conn net.Conn){
         req,err := http.ReadRequest(bufio.NewReader(conn))
         if err != nil{
@@ -129,7 +156,7 @@ func handleRequest(conn net.Conn){
             fmt.Fprintf(&responsebytes, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n", encoded);
             fmt.Println(responsebytes);
             n, err := conn.Write([]byte(responsebytes.String()));
-            fmt.Println(n)
+            fmt.Println(n);
             if err != nil {
                 conn.Close();
                 return
@@ -169,5 +196,3 @@ func handleRequest(conn net.Conn){
         }
         conn.Close()
 }
-
-
