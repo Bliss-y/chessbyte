@@ -1,16 +1,18 @@
 package main
 
 import (
-    "strings"
+	"math"
+	"strings"
 )
 
 // I may change this to a balanced tree instead
 type MatchFindingPlayer struct {
     player *PlayerConnection;
-    finding_tick int;
+    finding_tick uint;
     idle int;
     next *MatchFindingPlayer;
     gameType string;
+    status string;
 }
 
 // MatchMakingPool should contain all the players at all times
@@ -63,11 +65,13 @@ func (p *MatchFindingPlayer) findPair() *MatchFindingPlayer {
     temp := p;
     for temp != nil {
         diff := p.player.rating - temp.player.rating;
-        if diff * diff < 50 * 50 {
+        // What the fuck????? GO..?
+        if diff * diff <= ((50 * 50) + uint(math.Floor(math.Exp2(float64(p.finding_tick/5))))) {
             return temp;
         }
         temp = temp.next;
     }
+    p.finding_tick++;
     return nil;
 }
 
@@ -133,6 +137,7 @@ func (m *MatchMakingPool) runMatchMaking(){
                                 // TODO: Create a Game here;
                                 game := &Game {
                                 }
+                                game.initializeGame(temp.player, pair.player, "blit");
                                 go gameLoop(game);
                             }
                         }
@@ -145,5 +150,6 @@ func (m *MatchMakingPool) runMatchMaking(){
 }
 
 func (m *MatchMakingPool) add(player *PlayerConnection) {
-    
+    mfPlayer := &MatchFindingPlayer{player, 0, 0, nil, "", "idle"}
+    m.messages <- mfPlayer;
 }

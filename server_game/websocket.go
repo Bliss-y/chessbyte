@@ -34,15 +34,15 @@ func (w *WebSocketConnection) isClosed() bool {
 }
 
 
-func (WebSocketConnection) sendWebscoketMessage(connectionholder withConnection, message string) bool {
-    if connectionholder.isClosed() {
+func (ws*WebSocketConnection) sendWebscoketMessage( message string) bool {
+    if ws.isClosed() {
         return false;
     }
     var responsebytes bytes.Buffer;
     responsebytes.WriteByte(uint8(129));
     responsebytes.WriteByte(uint8(len(message)));
     responsebytes.WriteString(message);
-    _,err:=connectionholder.getConnection().Write(responsebytes.Bytes());
+    _,err:=ws.getConnection().Write(responsebytes.Bytes());
     if err != nil {
         return false;
     } else {
@@ -127,7 +127,7 @@ func closeSocket(conn net.Conn) bool{
     return err != nil;
 }
 
-func handleRequest(conn net.Conn){
+func handleRequest(conn net.Conn, onConnection func(conn *WebSocketConnection)){
         req,err := http.ReadRequest(bufio.NewReader(conn))
         if err != nil{
             conn.Close();
@@ -162,37 +162,17 @@ func handleRequest(conn net.Conn){
                 return
             }
             // check for existing games first
-            for i,game:= range games {
-                if game == nil {
-                   continue;
-                }
-                if game.status == -1 {
-                     // join the game
-                     fmt.Println("Joining the existing game")
-                     game.status = 2
-                     game.players[1] = &PlayerConnection{conn, make(chan string), 0, 0};
-                     game.playerCount = 2;
-                     games[i] = game
-                     return;
-                }
+            connection_header, exists = req.Header["X-Auth-Cb"];
+            fmt.Println(req.Header);
+            if !exists {
+                conn.Close();
+                return;
             }
-            // check for idle games
-            for i,game:= range games {
-                if game == nil {game = &Game{};
-                game.status = -2}
-                if game.status == -2 {
-                     game.initializeGame(conn)
-                     fmt.Println("Creating the new game")
-                     // join the game
-                     game.status = -1
-                     games[i] = game
-                     go gameLoop(games[i]);
-                     return;
-                }
-            }
-            fmt.Println("Game not found ")
-            conn.Close();
+            // TODO: JWT ?
+            ws := &WebSocketConnection{conn, false,make(chan string), false, connection_header[0]}
+            ws.read();
+            onConnection(ws);
             return
         }
-        conn.Close()
+        conn.Close();
 }

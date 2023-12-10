@@ -119,7 +119,7 @@ func (g *Game) update(dt int64){
         p.update(dt, g);
     }
         var responsebytes bytes.Buffer;
-        fmt.Fprintf(&responsebytes, "%s %v %v %v %v", string(game.currentfen[:]), game.game_duration, game.turn, game.tick)
+        fmt.Fprintf(&responsebytes, "%s %v %v %v %v", string(g.currentfen[:]), g.game_duration, g.turn, g.tick, g.winner)
         g.broadCast(responsebytes.String());
         g.tick++;
 }
@@ -127,12 +127,6 @@ func (g *Game) update(dt int64){
 func gameLoop(game *Game) {
     // TODO: let game loop only handle while playing mode
     for game.status == -1 {
-    }
-    if (game.status == GAME_STATUS_RUNNING) {
-        fmt.Println("Starting game")
-        for _,e := range game.players {
-            go readWebsocket(e.connection,e.channel);
-        }
     }
     start := time.Now();
     for game.status == GAME_STATUS_RUNNING {
