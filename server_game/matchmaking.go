@@ -114,8 +114,8 @@ func (m *MatchMakingPool) runMatchMaking(){
         temp := m.players;
         for temp != nil {
             select {
-                case pl_message:= <-temp.player.ws.channel: {
-                    if pl_message ==  "" {
+                case pl_message := <-temp.player.ws.channel: {
+                    if pl_message ==  "" || temp.player.ws.isClosed() {
                         delete(m.playing, temp.player.id);
                         m.players.remove(temp.player.id);
                         break;

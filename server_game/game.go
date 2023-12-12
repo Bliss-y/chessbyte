@@ -71,7 +71,7 @@ func (g *Game) initializeGame(player1 *PlayerConnection, player2 *PlayerConnecti
         g.players = [2]*PlayerConnection{player2, player1};
     }
     switch gameType {
-        case "blit": {
+        case "blitz": {
             g.timed = true;
             g.game_duration = 10*60*5; //5 minutes blitz
         }
@@ -118,10 +118,10 @@ func (g *Game) update(dt int64){
     for _,p := range g.players {
         p.update(dt, g);
     }
-        var responsebytes bytes.Buffer;
-        fmt.Fprintf(&responsebytes, "%s %v %v %v %v", string(g.currentfen[:]), g.game_duration, g.turn, g.tick, g.winner)
-        g.broadCast(responsebytes.String());
-        g.tick++;
+    var responsebytes bytes.Buffer;
+    fmt.Fprintf(&responsebytes, "%s %v %v %v %v", string(g.currentfen[:]), g.game_duration, g.turn, g.tick, g.winner)
+    g.broadCast(responsebytes.String());
+    g.tick++;
 }
 
 func gameLoop(game *Game) {

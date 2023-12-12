@@ -1,0 +1,16 @@
+{
+    "type": "ESmodule",
+    "build": "ts-node ",
+    "scripts": {
+        "dev": "node ./dist/",
+        "watch": "npx nodemon"
+    },
+    "dependencies": {
+        "ws": "^8.15.0"
+    },
+    "devDependencies": {
+        "@types/ws": "^8.5.10",
+        "nodemon": "^3.0.2",
+        "ts-node": "^10.9.2"
+    }
+}
