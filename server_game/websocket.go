@@ -164,12 +164,12 @@ func handleRequest(conn net.Conn, onConnection func(conn *WebSocketConnection)){
             // check for existing games first
             connection_header, exists = req.Header["X-Auth-Cb"];
             fmt.Println(req.Header);
-            if !exists {
+            if false && !exists {
                 conn.Close();
                 return;
             }
             // TODO: JWT ?
-            ws := &WebSocketConnection{conn, false,make(chan string), false, connection_header[0]}
+            ws := &WebSocketConnection{conn, false,make(chan string), false, "TEST_"}
             ws.read();
             onConnection(ws);
             return

@@ -32,12 +32,14 @@ func main(){
             name string;
             id string;
             auth bool;
-            rating int;
+            rating uint;
         }
         p := resFromReq{}
-        if json.Unmarshal(resbytes, &p) != nil {
+        if json.Unmarshal(resbytes, &p) != nil || !p.auth{
             panic("could not parse data from there");
         }
+        player.rating = p.rating;
+        player.id = p.id;
         matchMakingpoool.add(player);
     }
     for {

@@ -1,5 +1,5 @@
 <script>
-    var socket = new WebSocket("ws://localhost:3000/game");
+    var socket = new WebSocket("ws://localhost:3000/game")
     socket.addEventListener("open", (e)=>{
         console.log("connection opened!!!");
         //socket.send("hello!");
@@ -21,6 +21,9 @@
         console.log("Attempting to close the socket")
         socket.close()
     }
+    function find() {
+        socket.send("find");
+    }
 </script>
 
 
@@ -28,6 +31,8 @@
     <input type="p" id="a" name="password" id="">
 </form>
 
+
 <button onclick="msg()">Send message to ws server</button>
 <button onclick="closeS()">Close</button>
+<button onclick="find()">Close</button>
 

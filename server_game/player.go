@@ -20,7 +20,7 @@ func (p *PlayerConnection)init(side int, timer int, timeout int) {
     p.timer = timer;
 }
 
-func makePlayer(ws *WebSocketConnection, id int, rating uint) *PlayerConnection {
+func makePlayer(ws *WebSocketConnection, id string, rating uint) *PlayerConnection {
     player := &PlayerConnection{ws, id, -1, rating, 0,0};
     return player;
 }
