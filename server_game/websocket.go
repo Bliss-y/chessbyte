@@ -58,8 +58,9 @@ func (ws *WebSocketConnection) setReading(x bool) {
     ws.isReading = x;
 }
 
-func (conn WebSocketConnection) Close() {
-    fmt.Println("Connection closed");
+func (conn *WebSocketConnection) Close() {
+    fmt.Println("Connection closed", conn);
+    if(conn.closed){return}
     close(conn.channel);
     conn.connection.Close();
     conn.closed = true;
@@ -71,7 +72,7 @@ func (connectionHolder *WebSocketConnection) read() {
     connectionHolder.isReading = true;
     message := connectionHolder.getChannel();
     buffer := make([]byte, 50); 
-    for {
+    for !connectionHolder.isClosed(){
         _, err := conn.Read(buffer);
         if err == io.EOF {
             message <- "Connection Closed!";
@@ -117,6 +118,7 @@ func (connectionHolder *WebSocketConnection) read() {
         }
         message <- string(msg)
     }
+    fmt.Println("reading ended", connectionHolder);
 }
 
 func closeSocket(conn net.Conn) bool{

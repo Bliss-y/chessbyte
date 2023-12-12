@@ -37,27 +37,31 @@ func (p *MatchFindingPlayer) add(np *MatchFindingPlayer){
         return;
     }
     x := p;
+    i:=0;
     for x.next != nil {
         x = x.next;
+        i++;
+        fmt.Println(i)
     }
     x.next = np;
 }
 
-func (p *MatchFindingPlayer) remove(id string ) *MatchFindingPlayer{
-    if p == nil {
-        return nil;
-    }
-    temp := p;
-    prev := temp;
-    for temp.next != nil {
+func (p *MatchFindingPlayer) remove(pool **MatchFindingPlayer, id string ) *MatchFindingPlayer{
+    temp := (*pool);
+    var prev *MatchFindingPlayer = nil;
+    for temp != nil  {
         if temp.player.id == id {
-            prev.next = temp.next;
-            break;
+            if prev == nil{
+                *pool = temp.next;
+                return temp;
+            }
+            prev.next = temp.next
+            return temp;
         }
         prev = temp;
         temp = temp.next;
     }
-    return temp;
+    return nil;
 }
 
 func initMatchMakingPool() MatchMakingPool{
@@ -85,10 +89,11 @@ func (p *MatchFindingPlayer) findPair() *MatchFindingPlayer {
 }
 
 func (m *MatchMakingPool) RemovePlayer(identifier string){
-    m.players.remove(identifier);
-    m.finders.remove(identifier);
+    m.players.remove(&m.players,identifier);
+    m.finders.remove(&m.players,identifier);
     m.playing[identifier].player.ws.Close();
 }
+
 
 func (m *MatchMakingPool) runMatchMaking(){
     startTime := time.Now()
@@ -121,8 +126,9 @@ func (m *MatchMakingPool) runMatchMaking(){
             select {
                 case pl_message := <-temp.player.ws.channel: {
                     if pl_message ==  "" || temp.player.ws.isClosed() {
+                        fmt.Println("dead connection", temp, temp.player);
                         delete(m.playing, temp.player.id);
-                        m.players.remove(temp.player.id);
+                        m.players.remove(&m.players,temp.player.id);
                         break;
                     }
                     cmds := strings.Split(pl_message, " ")
@@ -130,7 +136,7 @@ func (m *MatchMakingPool) runMatchMaking(){
                     switch cmds[0] {
                     //TODO: Somwhow have gametype here
                     case "find": {
-                        m.players.remove(temp.player.id)
+                        m.players.remove(&m.players,temp.player.id)
                         //TODO: check for the correct type
                         temp.gameType = cmds[1];
                         if m.finders == nil {
@@ -141,6 +147,15 @@ func (m *MatchMakingPool) runMatchMaking(){
                     }
                 }
             }
+            default: {
+                temp.finding_tick++;
+            }
+            }
+            if temp.finding_tick > 10*3 {
+                temp.player.ws.Close();
+                delete(m.playing, temp.player.id);
+                m.players.remove(&m.players,temp.player.id);
+                m.finders.remove(&m.players,temp.player.id);
             }
             temp = temp.next;
         }
@@ -148,7 +163,7 @@ func (m *MatchMakingPool) runMatchMaking(){
         temp = m.finders;
         for temp != nil {
                 if temp.player.ws.closed {
-                    m.players.remove(temp.player.id);
+                    m.players.remove(&m.players,temp.player.id);
                     temp = temp.next;
                     continue;
                 }
@@ -157,10 +172,10 @@ func (m *MatchMakingPool) runMatchMaking(){
                     switch pl_message {
                         case "": {
                             delete(m.playing, temp.player.id);
-                            m.finders.remove(temp.player.id);
+                            m.finders.remove(&m.players,temp.player.id);
                         }
                         case "stop": {
-                            m.finders.remove(temp.player.id);
+                            m.finders.remove(&m.players,temp.player.id);
                             if m.finders == nil {
                                 m.players = temp;
                             } else {m.players.add(temp)}
@@ -192,7 +207,6 @@ func (m *MatchMakingPool) add(player *PlayerConnection) {
         return;
     }
     mfPlayer := &MatchFindingPlayer{player, 0, 0, nil, "", "idle", nil}
-    fmt.Println("trying player adding!", mfPlayer);
     m.messages <- mfPlayer;
-    fmt.Println("player added!", mfPlayer);
+    return;
 }

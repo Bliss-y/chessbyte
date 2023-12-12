@@ -1,6 +1,6 @@
 import WebSocket from "ws"
 import axios from "axios"
-const gameAmount: number = 300;
+const gameAmount: number = 3;
 interface Player{
     id: String;
     authToken: String;

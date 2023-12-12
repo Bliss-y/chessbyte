@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 )
@@ -26,13 +27,15 @@ func main(){
         res, err := http.Get(
             fmt.Sprintf("http://localhost:4000/AuthPlayer?token=%v",
             conn.authToken));
-
         if err != nil {
             fmt.Println("user not logged in, didn't work");
             conn.connection.Close();
         }
-        resbytes := make([]byte, 0);
-        res.Body.Read(resbytes)
+        resbytes, err := io.ReadAll(res.Body);
+        if(err != nil) {
+            fmt.Println("user not logged in, didn't work");
+            conn.connection.Close();
+        }
         type resFromReq struct {
             name string;
             id string;
@@ -46,6 +49,7 @@ func main(){
         player.rating = p.rating;
         player.id = p.id;
         matchMakingpoool.add(player);
+        return;
     }
     for {
         conn, err := ln.Accept()

@@ -41,7 +41,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var ws_1 = __importDefault(require("ws"));
 var axios_1 = __importDefault(require("axios"));
-var gameAmount = 300;
+var gameAmount = 3;
 var players = new Map();
 function main() {
     return __awaiter(this, void 0, void 0, function () {
