@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+    "fmt"
 	"strings"
 	"time"
 )
@@ -95,8 +96,11 @@ func (m *MatchMakingPool) runMatchMaking(){
     for {
         select {
             case message :=  <-m.messages: {
+                fmt.Println("adding", message)
                 if m.players == nil {
                     m.players = message;
+                }else {
+                    m.players.add(message);
                 }
             }
             case message := <- m.signals:{
@@ -105,7 +109,8 @@ func (m *MatchMakingPool) runMatchMaking(){
                     m.RemovePlayer(commands[1]);
                 }
             }
-            }
+            default: {}
+        }
         diff := time.Now().Sub(startTime).Milliseconds();
         if diff < 100-overflow {
             continue;
@@ -187,5 +192,7 @@ func (m *MatchMakingPool) add(player *PlayerConnection) {
         return;
     }
     mfPlayer := &MatchFindingPlayer{player, 0, 0, nil, "", "idle", nil}
+    fmt.Println("trying player adding!", mfPlayer);
     m.messages <- mfPlayer;
+    fmt.Println("player added!", mfPlayer);
 }

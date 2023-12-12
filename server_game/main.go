@@ -20,10 +20,15 @@ func main(){
     }
     matchMakingpoool := initMatchMakingPool();
     onConnection := func(conn *WebSocketConnection){
+        fmt.Println("new connection!")
         player := &PlayerConnection{};
         player.ws = conn;
-        res, err := http.Get(fmt.Sprintf("http://localhost:4000/AuthPlayer?token=%v", conn.authToken))
+        res, err := http.Get(
+            fmt.Sprintf("http://localhost:4000/AuthPlayer?token=%v",
+            conn.authToken));
+
         if err != nil {
+            fmt.Println("user not logged in, didn't work");
             conn.connection.Close();
         }
         resbytes := make([]byte, 0);
@@ -35,7 +40,7 @@ func main(){
             rating uint;
         }
         p := resFromReq{}
-        if json.Unmarshal(resbytes, &p) != nil || !p.auth{
+        if json.Unmarshal(resbytes, &p) != nil {
             panic("could not parse data from there");
         }
         player.rating = p.rating;

@@ -59,6 +59,7 @@ func (ws *WebSocketConnection) setReading(x bool) {
 }
 
 func (conn WebSocketConnection) Close() {
+    fmt.Println("Connection closed");
     close(conn.channel);
     conn.connection.Close();
     conn.closed = true;
@@ -154,23 +155,20 @@ func handleRequest(conn net.Conn, onConnection func(conn *WebSocketConnection)){
             encoded:= base64.StdEncoding.EncodeToString(hashBytes);    
             var responsebytes bytes.Buffer;
             fmt.Fprintf(&responsebytes, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n", encoded);
-            fmt.Println(responsebytes);
-            n, err := conn.Write([]byte(responsebytes.String()));
-            fmt.Println(n);
+            _, err := conn.Write([]byte(responsebytes.String()));
             if err != nil {
                 conn.Close();
                 return
             }
             // check for existing games first
             connection_header, exists = req.Header["X-Auth-Cb"];
-            fmt.Println(req.Header);
-            if false && !exists {
+            if !exists {
                 conn.Close();
                 return;
             }
             // TODO: JWT ?
-            ws := &WebSocketConnection{conn, false,make(chan string), false, "TEST_"}
-            ws.read();
+            ws := &WebSocketConnection{conn, false,make(chan string), false, connection_header[0]}
+            go ws.read();
             onConnection(ws);
             return
         }

@@ -40,6 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var ws_1 = __importDefault(require("ws"));
+var axios_1 = __importDefault(require("axios"));
 var gameAmount = 300;
 var players = new Map();
 function main() {
@@ -52,19 +53,19 @@ function main() {
                         var data, jsondata, player, ws;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
-                                case 0: return [4 /*yield*/, fetch("http://localhost/loginUser", { method: "POST", body: JSON.stringify({ id: "" + i, name: "name_" + i }) })];
+                                case 0: return [4 /*yield*/, axios_1.default.post("http://localhost:4000/login", { id: "asdf" + i, name: "name_" + i, rating: i * 10 })];
                                 case 1:
                                     data = _b.sent();
-                                    return [4 /*yield*/, data.json()];
-                                case 2:
-                                    jsondata = _b.sent();
-                                    player = { id: jsondata.id, authToken: jsondata.authToken };
-                                    ws = new ws_1.default("ws://localhost:3000", [], {
+                                    jsondata = data.data;
+                                    player = { id: jsondata.id, authToken: jsondata.authToken, rating: jsondata.rating };
+                                    ws = new ws_1.default("ws://localhost:3000/game", {
                                         headers: {
                                             "X-Auth-Cb": "" + player.authToken
                                         }
                                     });
                                     ws.on("connect", function () { player.ws = ws; players.set(player.id, player); });
+                                    ws.on('error', function () { console.log(player.id, "error ws"); });
+                                    ws.on('close', function () { players.delete(player.id); console.log(player.id, "connection closed"); });
                                     return [2 /*return*/];
                             }
                         });
