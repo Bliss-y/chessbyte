@@ -41,8 +41,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var ws_1 = __importDefault(require("ws"));
 var axios_1 = __importDefault(require("axios"));
-var gameAmount = 3;
+var gameAmount = 100000;
 var players = new Map();
+var ec = 0;
 function main() {
     return __awaiter(this, void 0, void 0, function () {
         var _loop_1, i;
@@ -63,9 +64,7 @@ function main() {
                                             "X-Auth-Cb": "" + player.authToken
                                         }
                                     });
-                                    ws.on("connect", function () { player.ws = ws; players.set(player.id, player); });
-                                    ws.on('error', function () { console.log(player.id, "error ws"); });
-                                    ws.on('close', function () { players.delete(player.id); console.log(player.id, "connection closed"); });
+                                    ws.on("open", function () { player.ws = ws; players.set(player.id, player); console.log("connection opened", player.id); });
                                     return [2 /*return*/];
                             }
                         });

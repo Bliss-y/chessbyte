@@ -16,6 +16,7 @@ type WebSocketConnection struct {
     channel chan string;
     isReading bool;
     authToken string;
+    outchannel chan string;
 }
 
 type withConnection interface{
@@ -59,9 +60,7 @@ func (ws *WebSocketConnection) setReading(x bool) {
 }
 
 func (conn *WebSocketConnection) Close() {
-    fmt.Println("Connection closed", conn);
     if(conn.closed){return}
-    close(conn.channel);
     conn.connection.Close();
     conn.closed = true;
 }
@@ -80,9 +79,9 @@ func (connectionHolder *WebSocketConnection) read() {
             connectionHolder.Close();
             break;
         } else if err != nil {
-          fmt.Println("Err Occurred.. ?", err);
-          connectionHolder.Close();
-          break;
+            fmt.Println("Err Occurred.. ?", err);
+            connectionHolder.Close();
+            break;
         }
         // do the message parsing
         fin := 0;
@@ -118,7 +117,6 @@ func (connectionHolder *WebSocketConnection) read() {
         }
         message <- string(msg)
     }
-    fmt.Println("reading ended", connectionHolder);
 }
 
 func closeSocket(conn net.Conn) bool{
@@ -169,7 +167,7 @@ func handleRequest(conn net.Conn, onConnection func(conn *WebSocketConnection)){
                 return;
             }
             // TODO: JWT ?
-            ws := &WebSocketConnection{conn, false,make(chan string), false, connection_header[0]}
+            ws := &WebSocketConnection{conn, false,make(chan string), false, connection_header[0], make(chan string)}
             go ws.read();
             onConnection(ws);
             return

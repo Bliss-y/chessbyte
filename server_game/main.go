@@ -21,7 +21,6 @@ func main(){
     }
     matchMakingpoool := initMatchMakingPool();
     onConnection := func(conn *WebSocketConnection){
-        fmt.Println("new connection!")
         player := &PlayerConnection{};
         player.ws = conn;
         res, err := http.Get(
@@ -30,11 +29,18 @@ func main(){
         if err != nil {
             fmt.Println("user not logged in, didn't work");
             conn.connection.Close();
+            return;
+        }
+        if(res == nil || res.Body == nil){
+            fmt.Println("user not logged in, didn't work");
+            conn.connection.Close();
+            return;
         }
         resbytes, err := io.ReadAll(res.Body);
         if(err != nil) {
             fmt.Println("user not logged in, didn't work");
             conn.connection.Close();
+            return;
         }
         type resFromReq struct {
             name string;

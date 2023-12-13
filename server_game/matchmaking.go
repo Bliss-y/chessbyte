@@ -32,7 +32,14 @@ type MatchMakingPool struct {
     signals chan string;
 }
 
-func (p *MatchFindingPlayer) add(np *MatchFindingPlayer){
+func (p *MatchFindingPlayer) add(pool **MatchFindingPlayer,np *MatchFindingPlayer){
+    if *pool == nil {
+        *pool = np;
+        return;
+    }
+    np.next = (*pool)
+    *pool = np;
+    /*
     if p == nil {
         return;
     }
@@ -44,6 +51,7 @@ func (p *MatchFindingPlayer) add(np *MatchFindingPlayer){
         fmt.Println(i)
     }
     x.next = np;
+    */
 }
 
 func (p *MatchFindingPlayer) remove(pool **MatchFindingPlayer, id string ) *MatchFindingPlayer{
@@ -79,7 +87,7 @@ func (p *MatchFindingPlayer) findPair() *MatchFindingPlayer {
         diff := p.player.rating - temp.player.rating;
         // What the fuck????? GO..?
         factor := uint(math.Floor(math.Exp2(float64(p.finding_tick/5))));
-        if diff * diff <= ((50 * 50) + factor){
+        if diff * diff - temp.finding_tick<= ((50 * 50) + factor){
             return temp;
         }
         temp = temp.next;
@@ -101,11 +109,10 @@ func (m *MatchMakingPool) runMatchMaking(){
     for {
         select {
             case message :=  <-m.messages: {
-                fmt.Println("adding", message)
                 if m.players == nil {
                     m.players = message;
                 }else {
-                    m.players.add(message);
+                    m.players.add(&m.players,message);
                 }
             }
             case message := <- m.signals:{
@@ -142,7 +149,7 @@ func (m *MatchMakingPool) runMatchMaking(){
                         if m.finders == nil {
                             m.finders = temp;
                         } else {
-                            m.finders.add(temp)
+                            m.finders.add(&m.players,temp)
                         }
                     }
                 }
@@ -178,7 +185,7 @@ func (m *MatchMakingPool) runMatchMaking(){
                             m.finders.remove(&m.players,temp.player.id);
                             if m.finders == nil {
                                 m.players = temp;
-                            } else {m.players.add(temp)}
+                            } else {m.players.add(&m.players,temp)}
                         }
                 }
             }
